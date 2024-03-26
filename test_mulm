@@ -1,0 +1,14 @@
+import numpy as np
+import pandas as pd
+import scipy.stats as stats
+from mulm.residualizer import Residualizer
+import seaborn as sns
+np.random.seed(1)
+#Dataset with site effect on age
+site = np.array([-1] * 50 + [1] * 50)
+age = np.random.uniform(10, 40, size=100) + 5 * site
+y = -0.1 * age  + site + np.random.normal(size=100)
+data = pd.DataFrame(dict(y=y, age=age, site=site.astype(object)))
+ # Simple residualization on site
+res_spl = Residualizer(data, formula_res="site")
+yres = res_spl.fit_transform(y[:, None], res_spl.get_design_mat(data))

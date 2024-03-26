@@ -1,0 +1,103 @@
+---
+title: "**Volumes normalisés par ICV - Après FDR**"
+author: "*Mylène Moyal, François Ramon*"
+output:
+  pdf_document:
+    toc: true
+    toc_depth: 2
+geometry: margin = 1.5in
+font-size: 13pt
+date: "2024-02-22"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+\newpage
+
+
+```{r setup_wd, include=FALSE}
+source("~/Desktop/These/Catatonia/volume_mylene.R")
+datapath <- "/Users/francoisramon/Desktop/These/Catatonia/volume_catacof_maj.xlsx"
+D <- read_excel(datapath)
+custom_palette = c("#cc6666", "#66cc66")
+library(readxl)
+library(dplyr)
+library(ggplot2)
+library(ggpubr)
+library(ggsci)
+library(car)
+
+```
+
+
+```{r stats_volumes, echo = F,message=F,warning=F,results='asis',fig.height=6,fig.width=10,fig.align='center',cache=TRUE}
+
+
+results <- read.csv("/Users/francoisramon/Desktop/These/Catatonia/results_normalized.csv")
+
+colnames(results) <- c("id","volname","pvalue")
+p <- results$pvalue
+results$padj <- p.adjust(p, method = "fdr")
+Rsign <- results_cov[results$padj<0.05,]
+
+
+cat("## Results summary : ")
+print(knitr::kable(Rsign))
+cat('\n')
+cat('\\newpage\n')
+cat('\n')
+
+
+rois <- Rsign$volname
+
+for (r in rois){
+  D[r]<-1500* D[r]/ D$`Intracranial Cavity (IC) volume cm3` 
+}
+
+
+
+# #regions <- c("Hippocampus total volume cm3")
+# cat('\n')
+# cat("# Statistics on volumes")
+# cat('\\vspace{10pt}\n')
+# significant_vols <- data.frame("Volume_name")
+# results <- data.frame(Volume_name=character(),pvalue=numeric())
+for (R in rois){
+  cat('\n')
+  cat("## Analyzing ", R, "\n")
+  cat('\\vspace{10pt}\n')
+
+  D <- read_excel(datapath)
+  Dr <- getDataframe(D,R)
+
+  
+  res.lm <- lm(I(Y*1e10) ~ statut + Age + Sex + ECT + tesla,data = Dr)
+  res_df <- Anova(res.lm, type =2)
+  res_df$Padj <-  c(Rsign[Rsign$volname==R,]$padj,NA,NA,NA,NA,NA)
+
+
+  print(knitr::kable(res_df,caption = paste("Analyzing ",R, " ~ statut + age +sex + ECT + tesla")))
+  cat(isSignificant(res_df))
+  cat('\\vspace{20pt}\n')
+
+
+  g <- ggviolin(Dr, x = "statut", y = "Y", fill = "statut",
+             palette = custom_palette,
+             alpha = 0.6,
+             width = 0.5,
+             linetype = 'blank',
+             add= "jitter",color = "statut")
+  print(g)
+  cat('\n')
+  cat('\\newpage\n')
+  cat('\n')
+
+}
+# write.csv(results,"/Users/francoisramon/Desktop/These/Catatonia/results_normalized_covICV.csv")
+# write.csv(significant_vols,"/Users/francoisramon/Desktop/These/Catatonia/sign_volumes.csv")
+
+```
+
+
